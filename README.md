@@ -1,4 +1,4 @@
 # Paralelní a distribuované algoritmy - Projekt
-## Odd-even transposition sort
+## Odd-Even Transposition Sort
 
 ##### Autor: Dominik Harmim <harmim6@gmail.com>

@@ -12,7 +12,7 @@
 
 
 #define COMM MPI_COMM_WORLD /// Default MPI communicator.
-#define TAG 0 /// An MPI tag used for transmission of messages with numbers.
+#define TAG 0 /// An MPI tag used for the transmission of messages with numbers.
 #define MASTER 0 /// A rank of the master process.
 #define NUMBERS_FILE "numbers" /// A name of the input file with numbers.
 
@@ -32,10 +32,9 @@ auto MPI_error() -> void
 
 
 /**
- * The master process reads numbers from the input file, prints them to
+ * The master process reads numbers from the input file, prints them to the
  * standard output, and sends them to the others processes.
  *
- * @throws runtime_error
  * @param rank A rank of a process.
  * @return Returns the number of numbers that have been read.
  */
@@ -96,17 +95,27 @@ auto receive_number() -> int
 }
 
 
-auto ots_sort_cmp(
-	int &number, const int rank, const int limit, const bool odd
+/**
+ * Compares either odd or even processes with their neighbours and do
+ * a swap if necessary.
+ *
+ * @param number A number of a process.
+ * @param rank A rank of a process.
+ * @param limit The right limit for processes ranks to compare.
+ * @param odd_even Determines whether to compare odd or even processes with
+ *                 their neighbours.
+ */
+auto ots_cmp(
+	int &number, const int rank, const int limit, const bool odd_even
 ) -> void
 {
-	if (rank > limit || (odd && rank == MASTER))
+	if (rank > limit || (rank == MASTER && odd_even))
 	{
 		return;
 	}
 
 	// even/odd processes send their value to odd/even processes
-	if (!odd && rank < limit)
+	if (!odd_even && rank < limit)
 	{
 		if (MPI_Send(&number, 1, MPI_INT, rank + 1, TAG, COMM))
 		{
@@ -137,17 +146,24 @@ auto ots_sort_cmp(
 }
 
 
-auto ots_sort(int &number, const int rank, const int procs_count) -> void
+/**
+ * The odd-even transposition sort algorithm.
+ *
+ * @param number A number of a process.
+ * @param rank A rank of a process.
+ * @param procs_count The number of all processes.
+ */
+auto ots(int &number, const int rank, const int procs_count) -> void
 {
-	int odd_limit = 2 * (procs_count / 2) - 1;
-	int even_limit = 2 * ((procs_count - 1) / 2);
+	const int odd_limit = 2 * (procs_count / 2) - 1;
+	const int even_limit = 2 * ((procs_count - 1) / 2);
 
 	for (int i = 0; i <= procs_count / 2; i++)
 	{
 		// odd processes compare
-		ots_sort_cmp(number, rank, odd_limit, rank % 2);
+		ots_cmp(number, rank, odd_limit, rank % 2);
 		// even processes compare
-		ots_sort_cmp(number, rank, even_limit, !(rank % 2));
+		ots_cmp(number, rank, even_limit, !(rank % 2));
 	}
 }
 
@@ -234,14 +250,13 @@ auto main(int argc, char *argv[]) -> int
 	}
 
 	int number = receive_number();
-	ots_sort(number, rank, procs_count);
+	ots(number, rank, procs_count);
 
 	int *const numbers = new int[procs_count];
 	receive_all_numbers(numbers, number, rank, procs_count);
-
 	print_numbers(numbers, rank, procs_count);
-	delete[] numbers;
 
+	delete[] numbers;
 	MPI_Finalize();
 
 	return EXIT_SUCCESS;

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 # Author: Dominik Harmim <harmim6@gmail.com>
 
 OUT='ots'
