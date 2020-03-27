@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <cmath>
 #include <mpi.h>
 
 #ifdef DEBUG
@@ -162,7 +163,7 @@ auto ots(int &number, const int rank, const int procs_count) -> void
 	const int odd_limit = 2 * (procs_count / 2) - 1;
 	const int even_limit = 2 * ((procs_count - 1) / 2);
 
-	for (int i = 0; i <= procs_count / 2; i++)
+	for (int i = 0; i < ceil(procs_count / 2.0); i++)
 	{
 		// odd processes compare
 		ots_cmp(number, rank, odd_limit, rank % 2);
@@ -247,15 +248,16 @@ auto main(int argc, char *argv[]) -> int
 		MPI_Abort(COMM, EXIT_SUCCESS);
 	}
 
+	auto number = receive_number();
+
 	int procs_count;
 	if (MPI_Comm_size(COMM, &procs_count))
 	{
 		MPI_error();
 	}
 
-	auto number = receive_number();
 #ifdef DEBUG
-	chrono::time_point<std::chrono::high_resolution_clock> start, end;
+	chrono::time_point<chrono::high_resolution_clock> start, end;
 	if (rank == MASTER) start = chrono::high_resolution_clock::now();
 #endif
 	ots(number, rank, procs_count);
