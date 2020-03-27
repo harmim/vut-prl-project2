@@ -4,6 +4,7 @@
 OUT='ots'
 SOURCE="$OUT.cpp"
 BUILD_OPTIONS='-std=c++14'
+#BUILD_OPTIONS='-std=c++14 -D DEBUG'
 RUN_OPTIONS='-q'
 NUMBERS_FILE='numbers'
 

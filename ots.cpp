@@ -10,6 +10,10 @@
 #include <fstream>
 #include <mpi.h>
 
+#ifdef DEBUG
+#include <chrono>
+#endif
+
 
 #define COMM MPI_COMM_WORLD /// Default MPI communicator.
 #define TAG 0 /// An MPI tag used for the transmission of messages with numbers.
@@ -237,7 +241,7 @@ auto main(int argc, char *argv[]) -> int
 		MPI_error();
 	}
 
-	const size_t numbers_count = read_numbers(rank);
+	const auto numbers_count = read_numbers(rank);
 	if (!numbers_count && rank == MASTER)
 	{
 		MPI_Abort(COMM, EXIT_SUCCESS);
@@ -249,12 +253,27 @@ auto main(int argc, char *argv[]) -> int
 		MPI_error();
 	}
 
-	int number = receive_number();
+	auto number = receive_number();
+#ifdef DEBUG
+	chrono::time_point<std::chrono::high_resolution_clock> start, end;
+	if (rank == MASTER) start = chrono::high_resolution_clock::now();
+#endif
 	ots(number, rank, procs_count);
+#ifdef DEBUG
+	if (rank == MASTER) end = chrono::high_resolution_clock::now();
+#endif
 
-	int *const numbers = new int[procs_count];
+	auto *const numbers = new int[procs_count];
 	receive_all_numbers(numbers, number, rank, procs_count);
 	print_numbers(numbers, rank, procs_count);
+
+#ifdef DEBUG
+	if (rank == MASTER)
+	{
+		chrono::duration<double> diff = end - start;
+		cout << endl << "Time: " << diff.count() << endl;
+	}
+#endif
 
 	delete[] numbers;
 	MPI_Finalize();
